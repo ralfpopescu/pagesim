@@ -28,9 +28,7 @@ uint64_t page_lookup(uint64_t vpn, uint64_t offset, char rw, stats_t *stats)
     pte_t* pte = &(current_pagetable[vpn]);
     
     uint8_t valid = pte->valid;
-    uint8_t dirty = pte->dirty;
-    uint8_t pfn = pte->pfn;
-    uint8_t freq = pte->frequency;
+    pfn = pte->pfn;
     
     if(valid){
         pte->frequency += 1;
@@ -42,8 +40,7 @@ uint64_t page_lookup(uint64_t vpn, uint64_t offset, char rw, stats_t *stats)
         }
         
     } else {
-        stats->page_faults += 1;
-        page_fault_handler(vpn, rw, stats);
+        pfn = page_fault_handler(vpn, rw, stats);
     }
     
 

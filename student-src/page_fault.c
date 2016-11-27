@@ -35,6 +35,8 @@ uint64_t page_fault_handler(uint64_t vpn, char rw, stats_t *stats)
 
 
 	/********* TODO ************/
+
+    stats->page_faults += 1;
     
     rlte_t* entry = &(rlt[victim_pfn]);
     
@@ -46,6 +48,7 @@ uint64_t page_fault_handler(uint64_t vpn, char rw, stats_t *stats)
     pte_t* page = &(current_pagetable[vpn]);
     page->valid = 1;
     page->pfn = victim_pfn;
+    page->frequency = 1;
     
     if(rw == WRITE){
         page->dirty = 1;
@@ -84,30 +87,43 @@ static uint64_t find_free_frame(stats_t *stats)
     
     int rltsize = 1 << rlt_size;
     rlte_t* rlte = 0;
-    rlte_t* invalid_rlte = 0;
+    //rlte_t* invalid_rlte = 0;
     
     //int found = 0;
-    int LFU = 9999999;
+    uint64_t LFU = 9999999;
+    uint64_t accesses = 9999999;
     rlte_t* victim = &(rlte[0]);
     
     for(int i = 0; i < rltsize; i++) {
         rlte = &(rlt[i]);
-        if(rlte->valid == 0){
-            invalid_rlte = &(rlt[i]); //we have invalid page
-            return current_pagetable[invalid_rlte->vpn].pfn;
+
+
+        if(rlte->valid == 0) {
+            //we have invalid page
+            return i;
         }
-        int accesses = current_pagetable[rlte->vpn].frequency;
+
+        task_struct* ts = rlte->task_struct;
+        pte_t* pt = ts->pagetable;
+        pte_t* entry = &(pt[rlte->vpn]);
+
+        accesses = entry->frequency;
+
         if(accesses < LFU) {
+            LFU = accesses;
             victim = rlte; //we have LFU page
         }
     }
     
-    pte_t* pte = &(current_pagetable[victim->vpn]);
-    victim_pfn = pte->pfn;
+    task_struct* victim_task_struct = victim->task_struct;
+    pte_t* victim_pagetable = victim_task_struct->pagetable;
+    pte_t* victim_pte = &(victim_pagetable[victim->vpn]);
+
+    victim_pfn = victim_pte->pfn;
     
-    pte->valid = 0;
+    victim_pte->valid = 0;
     
-    if(pte->dirty == 1) {
+    if(victim_pte->dirty == 1) {
         stats->writes_to_disk += 1;
     }
     

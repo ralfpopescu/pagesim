@@ -24,9 +24,9 @@ uint64_t tlb_lookup(uint64_t vpn, uint64_t offset, char rw, stats_t *stats)
 
     /********* TODO ************/
     
-    tlb_t* running = 0;
+    tlbe_t* running = 0;
     uint64_t pfnRet = 0;
-    tlb_t* found = 0;
+    tlbe_t* found = 0;
     int tlbsize = 1 << tlb_size;
     
     for(int i = 0; i < tlbsize; i++){
@@ -39,8 +39,8 @@ uint64_t tlb_lookup(uint64_t vpn, uint64_t offset, char rw, stats_t *stats)
     }
     
     if(pfnRet != 0){
-        pte_t* pt_entry = current_pagetable[vpn];
-        entry->frequency += 1;
+        pte_t* pt_entry = &(current_pagetable[vpn]);
+        pt_entry->frequency += 1;
         
         found->used = 1;
         
@@ -85,7 +85,7 @@ uint64_t tlb_lookup(uint64_t vpn, uint64_t offset, char rw, stats_t *stats)
         //run clock sweep
         int cycle = 0;
         for(int k = 0; k < tlbsize; k++){
-            running = &(tlb[j]);
+            running = &(tlb[k]);
             if(running->used == 0) {
                 found = running;
                 cycle = 1;
@@ -100,7 +100,7 @@ uint64_t tlb_lookup(uint64_t vpn, uint64_t offset, char rw, stats_t *stats)
         
         int victim_vpn = found->vpn;
         int victim_dirty = found->dirty;
-        pte_t* pt_entry = current_pagetable[victim_vpn];
+        pte_t* pt_entry = &(current_pagetable[victim_vpn]);
         
         if(victim_dirty) {
             pt_entry->dirty = 1;

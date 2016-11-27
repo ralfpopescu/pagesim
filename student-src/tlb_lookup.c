@@ -31,7 +31,7 @@ uint64_t tlb_lookup(uint64_t vpn, uint64_t offset, char rw, stats_t *stats)
     
     for(int i = 0; i < tlbsize; i++){
         running = &(tlb[i]);
-        if(vpn == running->vpn && running->valid == 1){
+        if(vpn == running->vpn && running->valid == 1 ){
             pfnRet = running->pfn;
             found = running;
             break;
@@ -78,6 +78,13 @@ uint64_t tlb_lookup(uint64_t vpn, uint64_t offset, char rw, stats_t *stats)
         running = &(tlb[j]);
         if(running->valid == 0){
             found = running;
+
+            found->vpn = vpn;
+            found->pfn = pfn;
+            found->valid = 1;
+            found->used = 1;
+
+            break;
         }
     }
     //didn't find an invalid block
@@ -105,6 +112,12 @@ uint64_t tlb_lookup(uint64_t vpn, uint64_t offset, char rw, stats_t *stats)
         if(victim_dirty) {
             pt_entry->dirty = 1;
         }
+
+        found->vpn = vpn;
+        found->pfn = pfn;
+        found->valid = 1;
+        found->used = 1;
+        //found->dirty
         
     }
 

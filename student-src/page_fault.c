@@ -48,7 +48,7 @@ uint64_t page_fault_handler(uint64_t vpn, char rw, stats_t *stats)
     pte_t* page = &(current_pagetable[vpn]);
     page->valid = 1;
     page->pfn = victim_pfn;
-    page->frequency = 1;
+    page->frequency += 1;
     
     if(rw == WRITE){
         page->dirty = 1;

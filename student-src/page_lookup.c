@@ -24,6 +24,11 @@ uint64_t page_lookup(uint64_t vpn, uint64_t offset, char rw, stats_t *stats)
 	/********* TODO ************/
     
     stats->accesses += 1;
+    if(rw == WRITE) {
+            stats->writes += 1;
+        } else {
+            stats->reads += 1;
+        }
     
     pte_t* pte = &(current_pagetable[vpn]);
     
@@ -34,10 +39,11 @@ uint64_t page_lookup(uint64_t vpn, uint64_t offset, char rw, stats_t *stats)
         pte->frequency += 1;
         if(rw == WRITE) {
             pte->dirty = 1;
-            stats->writes += 1;
-        } else {
+            //stats->writes += 1;
+        } 
+        /*else {
             stats->reads += 1;
-        }
+        } */
         
     } else {
         pfn = page_fault_handler(vpn, rw, stats);

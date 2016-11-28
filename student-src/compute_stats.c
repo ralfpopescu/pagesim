@@ -19,4 +19,9 @@ void compute_stats(stats_t *stats)
 	// 3) A dirty page is evicted - Disk is written to here
 	// 4) For every access regardless of translation fault and page fault
     stats->writes_to_disk -= 1;
+
+    double AAT = ((double)(stats->TLB_READ_TIME * stats->accesses) + (double)(stats->translation_faults * stats->MEMORY_READ_TIME) + (double)(stats->page_faults * stats->DISK_READ_TIME) + (double)(stats->writes_to_disk * stats->DISK_WRITE_TIME))/stats->accesses;
+
+    stats->AAT = AAT;
+     
 }

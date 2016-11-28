@@ -15,8 +15,8 @@ uint64_t get_offset(uint64_t virtual_address)
 
 	/********* TODO ************/
     //virtual_address_size
-    int mask = (1 << page_size) - 1;
-	return virtual_address && mask;
+    uint64_t mask = (1 << page_size) - 1;
+	return virtual_address & mask;
 }
 
 /**
@@ -31,8 +31,8 @@ uint64_t get_vpn(uint64_t virtual_address)
 	// Use page size and virtual_address_size from global.h to compute this
 
 	/********* TODO ************/
-    int maskAmt = virtual_address_size - page_size;
+    uint64_t maskAmt = virtual_address_size - page_size;
     uint64_t shifted = virtual_address >> page_size;
-    int mask = (1 << maskAmt) - 1;
-	return shifted && mask;
+    uint64_t mask = (1 << maskAmt) - 1;
+	return shifted & mask;
 }

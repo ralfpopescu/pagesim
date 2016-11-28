@@ -32,21 +32,22 @@ uint64_t page_lookup(uint64_t vpn, uint64_t offset, char rw, stats_t *stats)
     
     pte_t* pte = &(current_pagetable[vpn]);
     
-    uint8_t valid = pte->valid;
-    pfn = pte->pfn;
     
-    if(valid){
+    
+    if(pte->valid){
         pte->frequency += 1;
         if(rw == WRITE) {
             pte->dirty = 1;
-            //stats->writes += 1;
         } 
-        /*else {
-            stats->reads += 1;
-        } */
-        
+        pfn = pte->pfn;
     } else {
         pfn = page_fault_handler(vpn, rw, stats);
+        if(rw == WRITE) {
+            pte->dirty = 1;
+        }
+        pte->frequency += 1;
+        pte->valid = 1;
+        pte->pfn = pfn;
     }
     
 

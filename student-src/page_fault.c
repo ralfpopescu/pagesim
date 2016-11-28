@@ -48,7 +48,8 @@ uint64_t page_fault_handler(uint64_t vpn, char rw, stats_t *stats)
     pte_t* page = &(current_pagetable[vpn]);
     page->valid = 1;
     page->pfn = victim_pfn;
-    page->frequency += 1;
+    page->frequency = 1;
+    
     
     if(rw == WRITE){
         page->dirty = 1;
@@ -84,6 +85,8 @@ static uint64_t find_free_frame(stats_t *stats)
 	uint64_t victim_pfn = 0;
 
 	/********* TODO ************/
+
+   
     
     int rltsize = 1 << rlt_size;
     rlte_t* rlte = 0;
@@ -92,36 +95,39 @@ static uint64_t find_free_frame(stats_t *stats)
     //int found = 0;
     uint64_t LFU = 9999999;
     uint64_t accesses = 9999999;
-    rlte_t* victim = &(rlte[0]);
+    rlte_t* victim = &(rlt[0]);
     
-    for(int i = 0; i < rltsize; i++) {
-        rlte = &(rlt[i]);
+    for(int i = 0; i < rltsize; i++) { //go through every physical frame
+        rlte = &(rlt[i]); //rlte is entry
 
 
         if(rlte->valid == 0) {
-            //we have invalid page
+            //we have invalid page           
+            
             return i;
         }
 
-        task_struct* ts = rlte->task_struct;
-        pte_t* pt = ts->pagetable;
-        pte_t* entry = &(pt[rlte->vpn]);
+        task_struct* ts = rlte->task_struct; //get process using physical frame
+        pte_t* pt = ts->pagetable;  //get page table of process
+        pte_t* entry = &(pt[rlte->vpn]); //get entry at that vpn
 
-        accesses = entry->frequency;
+        accesses = entry->frequency; //frequency to compare
 
         if(accesses < LFU) {
             LFU = accesses;
             victim = rlte; //we have LFU page
+            victim_pfn = i;
         }
     }
     
-    task_struct* victim_task_struct = victim->task_struct;
-    pte_t* victim_pagetable = victim_task_struct->pagetable;
-    pte_t* victim_pte = &(victim_pagetable[victim->vpn]);
+    task_struct* victim_task_struct = victim->task_struct; //access PCB of victim process
+    pte_t* victim_pagetable = victim_task_struct->pagetable; //access page table of victim frame
+    pte_t* victim_pte = &(victim_pagetable[victim->vpn]); //access mapped entry
 
-    victim_pfn = victim_pte->pfn;
+    //victim_pfn = victim_pte->pfn;
     
-    victim_pte->valid = 0;
+    victim_pte->valid = 0; //make mapping invalid in other process page table
+    
     
     if(victim_pte->dirty == 1) {
         stats->writes_to_disk += 1;

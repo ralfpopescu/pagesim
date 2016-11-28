@@ -23,12 +23,49 @@ uint64_t tlb_lookup(uint64_t vpn, uint64_t offset, char rw, stats_t *stats)
     
 
     /********* TODO ************/
+    
+    tlbe_t* running = 0;
+    uint64_t pfnRet = 0;
+    tlbe_t* found = 0;
+    int foundInv = 0;
+    int tlbsize = 1 << tlb_size;
+
+    
+    for(int i = 0; i < tlbsize; i++){
+        running = &(tlb[i]);
+        if(vpn == running->vpn && running->valid == 1 ){
+            pfnRet = running->pfn;
+            found = running;
+            foundInv = 1;
+            break;
+        }
+    }
+    
+    if(foundInv != 0){
+        pte_t* pt_entry = &(current_pagetable[vpn]);
+        pt_entry->frequency += 1;
+        
+        found->used = 1;
+        
+        if(rw == WRITE){
+            found->dirty = 1;
+        }
+
+        stats->accesses += 1;
+        if(rw == WRITE) {
+            stats->writes += 1;
+            pt_entry->dirty = 1;
+        } else {
+            stats->reads += 1;
+        }
+        
+        return pfnRet;
+    }
 
 
     // The below function is called if it is a TLB miss
 	/* DO NOT MODIFY */
 	uint64_t pfn = page_lookup(vpn, offset, rw, stats);
-    
 	/*****************/
 
     // (1) Update the relevant stats
@@ -44,7 +81,56 @@ uint64_t tlb_lookup(uint64_t vpn, uint64_t offset, char rw, stats_t *stats)
     assert(current_pagetable[vpn].valid);
     assert(pfn == current_pagetable[vpn].pfn);
     /********* TODO ************/
+    found = 0;
+    
+    stats->translation_faults += 1;
+    
+    for(int j = 0; j < tlbsize; j++){
+        running = &(tlb[j]);
+        if(running->valid == 0){
+            found = running;
 
+            found->vpn = vpn;
+            found->pfn = pfn;
+            found->valid = 1;
+            found->used = 1;
+
+            return (pfn << page_size) | offset;
+        }
+    }
+    //didn't find an invalid block
+    if(found == 0) {
+        //run clock sweep
+        int cycle = 0;
+        for(int k = 0; k < tlbsize; k++){
+            running = &(tlb[k]);
+            if(running->used == 0) {
+                found = running;
+                cycle = 1;
+                break;
+            } else {
+                running->used = 0;
+            }
+        }
+        if(cycle == 0) {
+            found = &(tlb[0]);
+        }
+        
+        uint64_t victim_vpn = found->vpn;
+        int victim_dirty = found->dirty;
+        pte_t* pt_entry = &(current_pagetable[victim_vpn]);
+        
+        if(victim_dirty) {
+            pt_entry->dirty = 1;
+        }
+
+        found->vpn = vpn;
+        found->pfn = pfn;
+        found->valid = 1;
+        found->used = 1;
+        //found->dirty
+        
+    }
 
 
     /******* TODO *************/

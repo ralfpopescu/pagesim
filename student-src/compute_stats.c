@@ -18,4 +18,5 @@ void compute_stats(stats_t *stats)
 	// 2) A page fault - Disk is read here at least once
 	// 3) A dirty page is evicted - Disk is written to here
 	// 4) For every access regardless of translation fault and page fault
+    stats->writes_to_disk -= 1;
 }
